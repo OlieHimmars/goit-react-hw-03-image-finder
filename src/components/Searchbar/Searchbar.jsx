@@ -2,6 +2,7 @@ import { Component } from 'react';
 import PropTypes from 'prop-types';
 import { FcSearch } from "react-icons/fc";
 import css from './Searchbar.module.css';
+import { toast } from 'react-hot-toast'
 
 class Searchbar extends Component {
   static propTypes = {
@@ -18,7 +19,13 @@ class Searchbar extends Component {
 
   handleFormSubmit = e => {
     e.preventDefault();
+
+    if (!this.state.searchInput.trim()) {
+      return toast.error('Please enter search text');
+    }
+
     this.props.onSubmit(this.state.searchInput);
+    this.setState({ searchInput: '' });
   };
 
   render() {

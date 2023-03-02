@@ -5,6 +5,7 @@ import fetchImages from 'api/fetch';
 import Button from './Button';
 import Loader from './Loader';
 import Modal from './Modal';
+import { Toaster, toast } from 'react-hot-toast'
 import css from './App.module.css';
 
 export class App extends Component {
@@ -13,6 +14,7 @@ export class App extends Component {
     page: 1,
     isLoading: false,
     images: null,
+    error: null,
     totalHits: 0,
     imagesOnPage: 0,
     showModal: false,
@@ -20,7 +22,7 @@ export class App extends Component {
     currentImageTags: '',
   };
 
-  componentDidUpdate(prevProps, prevState) {
+  componentDidUpdate(_, prevState) {
     const prevQuery = prevState.searchInput;
     const nextQuery = this.state.searchInput;
     const prevPage = prevState.page;
@@ -34,7 +36,11 @@ export class App extends Component {
       this.setState({ isLoading: true });
 
       fetchImages(nextQuery, nextPage)
-        .then(({ hits, totalHits }) => {
+          .then(({ hits, totalHits }) => {
+          if (hits.length === 0) {
+            this.setState({ images: null, imagesOnPage: 0, totalHits: 0 });
+            return toast.error(`There is no image with name ${nextQuery}`);
+          }
           const arrayOfImages = this.createArrayOfImages(hits);
 
           this.setState({
@@ -44,7 +50,8 @@ export class App extends Component {
           });
         })
         .catch((error) => {
-          console.log(`${error.message}`);
+          this.setState({ error });
+          toast.error('Sorry, something went wrong. Please try again later.')
         })
         .finally(() => this.turnOffLoader());
     }
@@ -64,7 +71,8 @@ export class App extends Component {
           });
         })
         .catch(error => {
-          console.log(`${error.message}`);
+          this.setState({ error });
+          toast.error('Sorry, something went wrong. Please try again later.');
         })
         .finally(() => this.turnOffLoader());
     }
@@ -120,12 +128,20 @@ export class App extends Component {
 
     return (
       <div className={css.app}>
+        <Toaster
+          position='top-left'
+          toastOptions={{
+            duration: 2000,
+          }}/>
         <Searchbar onSubmit={this.formSubmitHandler} />
         {images && <ImageGallery images={images} openModal={this.openModal} />}
+
         {isLoading && <Loader />}
+        
         {imagesOnPage >= 12 && imagesOnPage < totalHits && (
           <Button onClick={this.nextFetch} />
         )}
+        
         {showModal && (
           <Modal
             imageUrl={currentLargeImageUrl}
@@ -133,6 +149,8 @@ export class App extends Component {
             onClose={this.toggleModal}
           />
         )}
+        
+
       </div>
     );
   }
